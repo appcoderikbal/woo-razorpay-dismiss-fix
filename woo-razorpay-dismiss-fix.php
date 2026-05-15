@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Razorpay Popup Dismiss Fix
  * Description: Redirects the customer back to the checkout page if they close the Razorpay payment popup without completing the payment.
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: appcoderikbal
  * Author URI: https://github.com/appcoderikbal
  * GitHub Plugin URI: https://github.com/appcoderikbal/woo-razorpay-dismiss-fix
@@ -65,7 +65,7 @@ class Razorpay_Dismiss_Fix {
             'razorpay_wc_script_fixed',
             plugin_dir_url( __FILE__ ) . 'script.js',
             array( 'razorpay_checkout', 'jquery' ),
-            '1.0.4'
+            '1.0.5'
         );
         wp_enqueue_script( 'razorpay_wc_script_fixed' );
     }
@@ -78,30 +78,53 @@ class Razorpay_Dismiss_Fix {
         $plugin_file = __FILE__;
         $basename = plugin_basename( $plugin_file );
 
+        // Add "Check for Update" link to plugin actions
+        add_filter( "plugin_action_links_{$basename}", function( $links ) {
+            $update_url = add_query_arg( array( 'rzp_check_update' => 1 ), admin_url( 'plugins.php' ) );
+            $links[] = '<a href="' . esc_url( $update_url ) . '" style="color: #3399cc; font-weight: bold;">Check for Update</a>';
+            return $links;
+        });
+
+        // Handle forced update check
+        add_action( 'admin_init', function() {
+            if ( isset( $_GET['rzp_check_update'] ) ) {
+                delete_transient( 'rzp_dismiss_fix_update_check' );
+                delete_site_transient( 'update_plugins' );
+                wp_redirect( remove_query_arg( 'rzp_check_update' ) );
+                exit;
+            }
+        });
+
         // Filter to check for updates
         add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) use ( $username, $repo, $basename, $plugin_file ) {
             if ( empty( $transient->checked ) ) {
                 return $transient;
             }
 
-            // Cache the GitHub response for 12 hours
             $cache_key = 'rzp_dismiss_fix_update_check';
             $remote_data = get_transient( $cache_key );
 
             if ( false === $remote_data ) {
-                $url = "https://api.github.com/repos/{$username}/{$repo}/releases/latest";
-                $response = wp_remote_get( $url, array( 'user-agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ) ) );
+                // Using Tags endpoint instead of Releases as it's more reliable for git tags
+                $url = "https://api.github.com/repos/{$username}/{$repo}/tags";
+                $response = wp_remote_get( $url, array( 
+                    'timeout' => 15,
+                    'user-agent' => 'Razorpay-Dismiss-Fix-Updater'
+                ) );
 
                 if ( ! is_wp_error( $response ) ) {
-                    $remote_data = json_decode( wp_remote_retrieve_body( $response ), true );
-                    set_transient( $cache_key, $remote_data, 12 * HOUR_IN_SECONDS );
+                    $tags = json_decode( wp_remote_retrieve_body( $response ), true );
+                    if ( is_array( $tags ) && ! empty( $tags ) ) {
+                        $remote_data = $tags[0]; // Get the latest tag
+                        set_transient( $cache_key, $remote_data, 12 * HOUR_IN_SECONDS );
+                    }
                 }
             }
 
-            if ( ! empty( $remote_data['tag_name'] ) ) {
+            if ( ! empty( $remote_data['name'] ) ) {
                 $plugin_data = get_plugin_data( $plugin_file );
                 $current_version = $plugin_data['Version'];
-                $remote_version = str_replace( 'v', '', $remote_data['tag_name'] );
+                $remote_version = str_replace( 'v', '', $remote_data['name'] );
 
                 if ( version_compare( $remote_version, $current_version, '>' ) ) {
                     $res = new stdClass();
@@ -131,12 +154,12 @@ class Razorpay_Dismiss_Fix {
                 $res = new stdClass();
                 $res->name = 'Razorpay Popup Dismiss Fix';
                 $res->slug = $basename;
-                $res->version = str_replace( 'v', '', $remote_data['tag_name'] );
+                $res->version = str_replace( 'v', '', $remote_data['name'] );
                 $res->author = '<a href="https://github.com/appcoderikbal">appcoderikbal</a>';
                 $res->homepage = "https://github.com/{$username}/{$repo}";
                 $res->sections = array(
                     'description' => 'Redirects the customer back to the checkout page if they close the Razorpay payment popup without completing the payment.',
-                    'changelog'   => $remote_data['body'] ?? 'No changelog available.',
+                    'changelog'   => 'Check GitHub for full changelog.',
                 );
                 $res->download_link = $remote_data['zipball_url'];
                 return $res;
