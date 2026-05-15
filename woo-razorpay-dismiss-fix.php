@@ -6,6 +6,7 @@
  * Author: appcoderikbal
  * Author URI: https://github.com/appcoderikbal
  * GitHub Plugin URI: https://github.com/appcoderikbal/woo-razorpay-dismiss-fix
+ * GitHub Repo: appcoderikbal/woo-razorpay-dismiss-fix
  * Primary Branch: main
  */
 
