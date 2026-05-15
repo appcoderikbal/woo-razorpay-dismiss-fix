@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Razorpay Popup Dismiss Fix
  * Description: Redirects the customer back to the checkout page if they close the Razorpay payment popup without completing the payment.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: appcoderikbal
  * Author URI: https://github.com/appcoderikbal
  * GitHub Plugin URI: https://github.com/appcoderikbal/woo-razorpay-dismiss-fix
@@ -30,12 +30,42 @@ class Razorpay_Dismiss_Fix {
             return;
         }
 
+        // Hide confusing order information and "Thank you" messages via CSS
+        add_action( 'wp_head', function() {
+            ?>
+            <style id="rzp-dismiss-fix-css">
+                /* Hide the order overview (Order #, Date, Total, etc.) */
+                .woocommerce-order-overview.order_details,
+                .woocommerce-order-details,
+                .woocommerce-customer-details,
+                /* Hide the 'Thank you' text added by the Razorpay plugin */
+                .woocommerce-checkout.woocommerce-pay p:first-of-type {
+                    display: none !important;
+                }
+                /* Ensure Pay Now button is prominent */
+                #btn-razorpay {
+                    background-color: #3399cc;
+                    color: #fff;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    margin-top: 20px;
+                }
+                #btn-razorpay-cancel {
+                    display: none !important; /* Hide the standard cancel button as we handle it via popup close */
+                }
+            </style>
+            <?php
+        });
+
         wp_dequeue_script( 'razorpay_wc_script' );
         wp_register_script(
             'razorpay_wc_script_fixed',
             plugin_dir_url( __FILE__ ) . 'script.js',
             array( 'razorpay_checkout', 'jquery' ),
-            '1.0.3'
+            '1.0.4'
         );
         wp_enqueue_script( 'razorpay_wc_script_fixed' );
     }

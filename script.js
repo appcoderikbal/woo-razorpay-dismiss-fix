@@ -30,13 +30,22 @@
             return;
         }
 
-        // Trigger cancellation flow
+        // Trigger cancellation flow to ensure backend status is updated
         var cancelBtn = document.getElementById('btn-razorpay-cancel');
-        if (cancelBtn) {
+        var form = document.forms['razorpayform'];
+
+        if (form) {
+            // Ensure we are sending the form-submit flag so backend knows it's a cancellation
+            var submitFlag = document.createElement('input');
+            submitFlag.type = 'hidden';
+            submitFlag.name = 'razorpay_wc_form_submit';
+            submitFlag.value = '1';
+            form.appendChild(submitFlag);
+            form.submit();
+        } else if (cancelBtn) {
             cancelBtn.click();
-        } else if (document.razorpayform) {
-            document.razorpayform.submit();
         } else if (data.cancel_url) {
+            // Ultimate fallback: redirect to checkout
             window.location.href = data.cancel_url;
         }
       },
