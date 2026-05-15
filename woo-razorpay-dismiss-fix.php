@@ -3,9 +3,9 @@
  * Plugin Name: Razorpay Popup Dismiss Fix
  * Description: Redirects the customer back to the checkout page if they close the Razorpay payment popup without completing the payment.
  * Version: 1.0.1
- * Author: Deepaman
- * Author URI: https://github.com/deepaman2626
- * GitHub Plugin URI: https://github.com/deepaman2626/woo-razorpay-dismiss-fix
+ * Author: appcoderikbal
+ * Author URI: https://github.com/appcoderikbal
+ * GitHub Plugin URI: https://github.com/appcoderikbal/woo-razorpay-dismiss-fix
  * Primary Branch: main
  */
 
